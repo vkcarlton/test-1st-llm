@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+    ollama:
+        image: ollama/ollama
+        container_name: ollama
+        restart: always
+        ports:
+            - "11434:11434"
+        volumes:
+            - ollama_data:/root/.ollama
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: all
+                          capabilities: [gpu]
+
+    backend:
+        build: ./backend
+        container_name: backend
+        ports:
+            - "5000:5000"
+        environment:
+            - OLLAMA_API=http://ollama:11434/api/generate
+        depends_on:
+            - ollama
+
+    frontend:
+        build: ./frontend
+        container_name: frontend
+        ports:
+            - "8080:8080"
+        environment:
+            - BACKEND_API=http://backend:5000/chat
+        depends_on:
+            - backend
+
+volumes:
+    ollama_data:
